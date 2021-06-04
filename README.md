@@ -1,2 +1,1 @@
 # blogapp
-curso nodeJS
