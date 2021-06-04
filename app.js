@@ -12,6 +12,7 @@ require("./models/Postagem")
 const Postagem = mongoose.model("postagens")
 require("./models/Categoria")
 const Categoria = mongoose.model("categoria")
+const usuarios = require("./routes/usuario")
 
 //const mongoose = require("mongoose")
 
@@ -52,7 +53,7 @@ const Categoria = mongoose.model("categoria")
 
   //ROTAS
   app.get('/', (req, res) => {
-    Postagem.find().populate("categoria").sort({data: "desc"}).lean().then((postagens) => {
+    Postagem.find().populate("categorias").sort({data: "desc"}).lean().then((postagens) => {
       res.render("index", {postagens: postagens, layout: "main"})
     }).catch((err) => {
       console.log(err)
@@ -70,6 +71,7 @@ const Categoria = mongoose.model("categoria")
                 res.redirect("/")
         }
       }).catch((err) => {
+        console.log(err)
           req.flash("error_msg", "Houve um erro interno")
           res.redirect("/")
       })
@@ -77,11 +79,37 @@ const Categoria = mongoose.model("categoria")
 
   app.get("/categorias", (req, res) => {
         Categoria.find().lean().then((categoria) => {
-          res.render("categorias/index", {Categoria: categoria})
+          res.render("categorias/index", {categorias: categoria, layout: "main"})
     }).catch((err) => {
       console.log(err)
           req.flash("error_msg", "Houve um erro interno ao listar as categorias")
           res.redirect("/")
+    })
+  })
+
+  app.get("/categorias/:slug", (req, res) => {
+        Categoria.findOne({slug: req.params.slug}).lean().then((categoria) => {
+            if(categoria){
+
+                Postagem.find({categorias: categoria._id}).lean().then((postagens) => {
+
+                    res.render("categorias/postagens", {postagens: postagens, categorias: categoria, layout: "main" })
+
+                }).catch((err) => {
+                  console.log(err)
+                  req.flash("error_msg", "Houve um erro ao listar os posts!")
+                  res.redirect("/")
+                })
+
+            }else{
+                req.flash("error_msg", "Esta categoria não existe ")
+                res.redirect("/")
+            }
+
+    }).catch((err) => {
+      console.log(err)
+      req.flash("error_msg", "Houve um erro interno ao carrgar a pagina desta categoria")
+      res.redirect("/")
     })
   })
 
@@ -94,6 +122,7 @@ const Categoria = mongoose.model("categoria")
   })
 
   app.use('/admin', admin)
+  app.use("/usuarios", usuarios)
 
 //OUTROS
 const PORT = 8081
